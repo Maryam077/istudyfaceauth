@@ -34,5 +34,12 @@ class UserRegisterForm(UserCreationForm):
 """
 Authentication
 """
-class UserAuthenticationForm(AuthenticationForm):
-    image = forms.CharField(widget=forms.HiddenInput())
+class UserLoginForm(forms.Form):
+    username = forms.CharField(max_length = 100,required=True)
+    password = forms.CharField(widget=forms.PasswordInput(),required=True)
+    #image = forms.CharField(max_length=500,widget = forms.HiddenInput(), required=True)
+    helper = FormHelper()
+    #helper.add_input(Button('verify', 'Verify Face', css_class='btn-primary', required=True, onclick="face_auth()"))
+    helper.add_input(Submit('submit', 'Submit', css_class='btn btn-outline-info',onsubmit=" return false;face_auth();"))
+    helper.form_method = 'POST'
+       

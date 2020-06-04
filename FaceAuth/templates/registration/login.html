@@ -1,26 +1,48 @@
-<!doctype html>
-<html lang-"en">
-    <head>
-        <meta charset="UTF-8">
-        <title>login</title>
-    </head>
-<body>
-    {% if form.error %}
-    <p> there error</p>
-    {% endif %}
-    {% if next %}
-    <p>hey, cant acces</p>
-    {% endif %}
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+{% if form.errors %}
+hi
+    {% for field in form %}
+        {% for error in field.errors %}
+            <div class="alert alert-danger">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-danger">
+            <strong>{{ error|escape }}</strong>
+        </div>
+    {% endfor %}
+{% endif %}
+    <div class="content-section">
+        <form action="{% url 'login' %}" method="POST" id="loginform" enctype="multipart/form-data">
+            {% csrf_token %}
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Login</legend>
+                {% crispy form %}
+            </fieldset>
+        </form>
+        
+    </div>
+{% endblock content %}
+{% block scripts%}
+<script>
+    function face_auth() {
+        console.log('hi')
+     $.ajax({
+         url:"{% url 'face_auth' %}",
+         data : {"location":"hi",
+         'csrfmiddlewaretoken': '{{ csrf_token }}',},
+         type:'POST',
+        dataType: 'json',
+         success: function (data) {
+            console.log(data);
+            $('#loginform').submit();
 
-    <form method="POST" action="{% url 'login' %}">
-        {% csrf_token %}
-        <p>username:{{ form.username }}</p>
-        <p>paassword:{{ form.password }}</p>
-
-        <input type="submit" value="login">
-        <input type="hidden" name='next' value="{{next}}">
-    </form>
-
-
-</body>
-</html> 
+         }
+     })   
+    }
+</script>
+{% endblock scripts %}
