@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import UserRegisterForm, UserLoginForm
 from django.conf import settings
 from .utils import prepare_image, face_detect, face_auth
 from django.http import JsonResponse, HttpResponse
 
-
+def index(request):
+    return render(request,'index.html',{})
 
 # Create your views here.
 def register(request):
@@ -36,10 +37,8 @@ def register(request):
 
 def login_page(request):
     if request.user.is_authenticated:
-           return HttpResponse('Welcome '+ request.user.username)
+           return index(request)
     if  request.method == 'POST':
-        if request.user.is_authenticated:
-            HttpResponse('Welcome '+ request.user.username)
         form = UserLoginForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data['username']
@@ -49,7 +48,7 @@ def login_page(request):
             if user:
                 if face_auth_view(user.userprofile.photo, user.username):
                     login(request, user)
-                    messages.add_message(request, messages.SUCCESS, 'User '+username+' logged in successfully!')
+                    return index(request)
                 else:
                     messages.add_message(request, messages.ERROR, 'Face verification failed please try again!')
             else:
@@ -69,3 +68,9 @@ def face_auth_view(location, username):
     x = face_auth(location, username)
     print (x)
     return x
+
+def logout_view(request):
+    if request.user.is_authenticated:
+        logout(request)
+    return index(request)
+    
