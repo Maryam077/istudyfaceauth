@@ -34,6 +34,8 @@ def face_detect():
 
     
     start_time = time.time()
+    if not os.path.isdir('FaceAuth\\profile_images\\'):
+        os.mkdir('FaceAuth\\profile_images\\')
     path = 'FaceAuth\profile_images\img'+str(int(time.time()))+'.jpeg'
     while True:
         s, img = cap.read()
@@ -119,6 +121,7 @@ def face_auth(location, username):
     # Release handle to the webcam
     video_capture.release()
     cv2.destroyAllWindows()
+
     if username in face_names:
         return True
     else:
