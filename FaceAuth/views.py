@@ -3,12 +3,29 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import UserRegisterForm, UserLoginForm
 from django.conf import settings
-from .utils import prepare_image, face_detect, face_auth
+from .utils import prepare_image, face_detect, face_auth, match_face
 from django.http import JsonResponse, HttpResponse
+from django.contrib.auth.models import User
+import threading
+from django.contrib.sessions.models import Session
+from django.utils import timezone
 
 def index(request):
+    if request.user.is_authenticated:
+        checkloggedin(request.user)
     return render(request,'index.html',{})
 
+def checkloggedin(user):
+    sessions = Session.objects.filter(expire_date__gte=timezone.now())
+    for session in sessions:
+        data = session.get_decoded()
+        if data.get('_auth_user_id') and  data.get('_auth_user_id') == str(user.id):
+            print('matching')
+            match_face(user)
+            threading.Timer(60.0,checkloggedin,args=(user,)).start()
+        
+    #user = User.objects.get(pk=id)
+    #print(user.is_authenticated)
 # Create your views here.
 def register(request):
     #face_detect('')
@@ -37,7 +54,8 @@ def register(request):
 
 def login_page(request):
     if request.user.is_authenticated:
-           return index(request)
+           return redirect('index')
+
     if  request.method == 'POST':
         form = UserLoginForm(request.POST)
         if form.is_valid():
@@ -48,7 +66,7 @@ def login_page(request):
             if user:
                 if face_auth_view(user.userprofile.photo, user.username):
                     login(request, user)
-                    return index(request)
+                    return redirect('index')
                 else:
                     messages.add_message(request, messages.ERROR, 'Face verification failed please try again!')
             else:
@@ -72,5 +90,5 @@ def face_auth_view(location, username):
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
-    return index(request)
+    return redirect('index')
     

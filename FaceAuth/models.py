@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=None, primary_key=True)
     photo = models.CharField(max_length=1500, blank=False)
-    
+
     class Meta:
         ordering = ["user"]
 

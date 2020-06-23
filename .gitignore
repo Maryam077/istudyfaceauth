@@ -1,5 +1,4 @@
 db.sqlite3
 FaceAuth/profile_images/
 .vscode
-iStudyFaceAuth/__pycache__/
-FaceAuth/__pycache__/
+__pycache__/

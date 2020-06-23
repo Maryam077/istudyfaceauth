@@ -7,7 +7,9 @@ import cv2
 import os
 import time
 from .models import UserProfile
-import numpy as np 
+import numpy as np
+import threading
+
 def decode_base64(data, altchars=b'+/'):
     image_data = re.sub('^data:image/.+;base64,', '', data)
     return base64.b64decode(image_data)
@@ -23,8 +25,8 @@ def base64_file(data, name=None):
     return ContentFile(base64.b64decode(_img_str), name='{}.{}'.format(name, ext))
 
 def face_detect():
-    
-    capture_duration = 10
+
+    capture_duration = 5
     WindowName ='Preview'
     view_window = cv2.namedWindow(WindowName,cv2.WINDOW_NORMAL)
 
@@ -51,9 +53,8 @@ def face_detect():
     return path
 
 def face_auth(location, username):
-    
     video_capture = cv2.VideoCapture(0)
-    capture_duration =30
+    capture_duration =5
     
     process_this_frame = True
     known_face_names  = []
@@ -72,6 +73,7 @@ def face_auth(location, username):
         ret, frame = video_capture.read()
 
         #for faster results
+        
         small_frame = cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
 
         rgb_small_frame = small_frame[:,:,::-1]
@@ -83,7 +85,7 @@ def face_auth(location, username):
                 face_names = []
                 name = 'Unknown'
                 for face_encoding in face_encodings:
-                    matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.4)
+                    matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.5)
                     face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
                     best_match_index = np.argmin(face_distances)
                     print(matches)
@@ -127,3 +129,41 @@ def face_auth(location, username):
     else:
         return False
 
+def match_face(user):
+    user_image = face_recognition.load_image_file(user.userprofile.photo)
+    user_face_encoding = face_recognition.face_encodings(user_image)[0]
+    
+    camera = cv2.VideoCapture(0)
+    duration = 10
+    start_time = time.time()
+
+    while True:
+        ret, frame = camera.read()
+
+        #for faster results
+        
+        small_frame = cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
+
+        rgb_small_frame = small_frame[:,:,::-1]
+
+        try:
+            face_locations = face_recognition.face_locations(rgb_small_frame)
+            face_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)
+            face_names = []
+            name = 'Unknown'
+                
+            matches = face_recognition.compare_faces(user_face_encoding, face_encoding, tolerance=0.5)
+            face_distances = face_recognition.face_distance(user_face_encoding, face_encoding)
+            best_match_index = np.argmin(face_distances)
+            print(matches)
+            if matches[best_match_index]:
+                name = user.username
+                print(name)
+                face_names.append(name)
+        except Exception as e:
+            print(e)
+        
+        if (int(time.time() - start_time) >= duration):
+            break
+    camera.release()
+    cv2.destroyAllWindows()
