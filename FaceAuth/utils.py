@@ -52,37 +52,57 @@ def face_detect():
                 break
     return path
 
-def match_face(user,show_window=False):
-    user_image = face_recognition.load_image_file(user.userprofile.photo)
-    user_face_encoding = face_recognition.face_encodings(user_image)[0]
+def match_face(user,show_window=False,testimage=None):
+    image_paths = [userprofile.photo for userprofile in user.userprofile_set.all()]
+    print(image_paths)
+    user_images = [face_recognition.load_image_file(img) for img in image_paths]
+    user_face_encodings = [face_recognition.face_encodings(user_image)[0] for user_image in user_images]
+    names = [name for name in [user.username] for i in range(len(user_face_encodings))]
+    print(names)
+    print(user_face_encodings)
     
-    camera = cv2.VideoCapture(0)
+    
+    if testimage==None:
+        camera = cv2.VideoCapture(0)
+    else :
+        frame = cv2.imread(testimage,cv2.IMREAD_COLOR)
+
     duration = 10
     start_time = time.time()
 
     while True:
-        ret, frame = camera.read()
+        if testimage==None:
+            ret, frame = camera.read()
 
         #for faster results
         
-        small_frame = cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
+        rgb_small_frame = cv2.resize(frame, (0,0), fx=0.25, fy=0.25)
 
-        rgb_small_frame = small_frame[:,:,::-1]
 
         try:
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)
             face_names = []
             name = 'Unknown'
-                
-            matches = face_recognition.compare_faces(user_face_encoding, face_encoding, tolerance=0.5)
-            face_distances = face_recognition.face_distance(user_face_encoding, face_encoding)
-            print(matches)
-            if matches:
+            matchesCount = 0
+            for  user_face_encoding in user_face_encodings:
+                matches= face_recognition.compare_faces(user_face_encoding, face_encoding)
+                #face_distances = face_recognition.face_distance(user_face_encoding, face_encoding)
+                if True in matches:
+                    matchesCount += 1
+
+            if matchesCount >= len(image_paths)*0.8:
                 name = user.username
+                #print(name+' Face detected')
                 face_names.append(name)
+                if not show_window:
+                    camera.release()
+                    cv2.destroyAllWindows()
+                    return True
+
+                
         except Exception as e:
-            print(e)
+            pass
         
         if (int(time.time() - start_time) >= duration):
             break
@@ -96,21 +116,22 @@ def match_face(user,show_window=False):
                 left *= 4
 
                 # Draw a box around the face
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 255), 2)
 
                 # Draw a label with a name below the face
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+                cv2.rectangle(frame, (left,bottom-30), (right, bottom), (255, 255, 255), cv2.FILLED)
                 font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+                cv2.putText(frame, name, (left + 6, bottom - 6), font, 2.0, (0, 0, 0), 1)
 
             # Display the resulting image
-            cv2.imshow('Video', frame)
+            cv2.imshow('Video', rgb_small_frame)
             cv2.waitKey(1)
         
     # Release handle to the webcam
-    camera.release()
+    #camera.release()
     cv2.destroyAllWindows()
     if user.username in face_names:
         return True
     else:
+        print(name+' Face not detected')
         return False

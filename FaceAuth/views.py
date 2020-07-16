@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import UserRegisterForm, UserLoginForm
 from django.conf import settings
-from .utils import prepare_image, face_detect, face_auth, match_face
+from .utils import prepare_image, face_detect, match_face
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 import threading
@@ -24,8 +24,9 @@ def checkloggedin(user):
             data = session.get_decoded()
             if data.get('_auth_user_id') and  data.get('_auth_user_id') == str(user.id):
                 print('matching')
-                match_face(user)
-                threading.Timer(60.0,checkloggedin,args=(user,)).start()
+                print(user)
+                match_face(user,True)
+                threading.Timer(15.0,checkloggedin,args=(user,)).start()
         
 def register(request):
     #face_detect('')
@@ -64,6 +65,7 @@ def login_page(request):
             user = authenticate(username=username, password=password)
             #print('user',user.userprofile.photo)
             if user:
+                # print(user.userprofile_set.all())
                 if face_auth_view(user):
                     login(request, user)
                     return redirect('index')
